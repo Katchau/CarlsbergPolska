@@ -129,9 +129,9 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 
 	start := time.Now()
 	fmt.Printf("Size: %d \n", len(trainInput[0]))
-	nn := gonn.NewNetwork(len(trainInput[0]), 500, 1, false, 0.25, 0.1)
+	nn := gonn.NewNetwork(len(trainInput[0]), 500, 1, false, 0.25, 0.1)//TODO ver isto também
 
-	nn.Train(trainInput, trainTargets, 400)
+	nn.Train(trainInput, trainTargets, 140) //TODO ver isto
 
 	gonn.DumpNN("1.nn", nn)
 
@@ -154,24 +154,21 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 
 		if output[0] < 0.1 && expect == 0 {
 			good++
-		}
-		if output[0] > 0.8 && expect == 1 {
+		} else if output[0] > 0.8 && expect == 1 {
 			good++
-		}
-		if output[0] != expect {
+		} else if output[0] != expect {
 			errCount++
-		}
-
-		if maxError < error {
-			maxError = error
-		}
-		if minError > error {
-			minError = error
+			if maxError < error {
+				maxError = error
+			}
+			if minError > error {
+				minError = error
+			}
 		}
 
 	}
 	fmt.Printf("success rate: %.2f %% \n", (good / float64(len(testInputs)) * 100))
-	fmt.Printf("error rate: %.2f %% \n", (errCount / float64(len(testInputs))))
+	fmt.Printf("error rate: %.2f %% \n", (errCount / float64(len(testInputs)) * 100))
 	fmt.Printf("error range [%.4f , %.4f]\n", minError, maxError)
 	elapsed := time.Since(start)
 	fmt.Printf("Training and test took %s \n ", elapsed)
@@ -189,7 +186,7 @@ const Dir = "dataSet/"
 const FileName = "yearV2.arff"
 
 func main() {
-	for i := 1; i <= 1; i++ {
+	for i := 2; i <= 2; i++ {
 		name := Dir + strconv.Itoa(i) + FileName
 		fmt.Printf("\n" + name + "\n")
 		t, tr, r, rt := importDataSet(name)
