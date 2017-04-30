@@ -12,6 +12,72 @@ import (
 	"github.com/fxsjy/gonn/gonn"
 )
 
+//Z-SCORE = 1.2X1 + 1.4X2 + 3.3X3 + 0.6X4 + 1.0X5
+//X1 = WorkingCapital/TotalAssets = X3 do outro
+//X2 = RetainedEarning/TotalAssets = x6
+//X3 = EBIT/TotalAssets = X7
+//X4 = MarketValuesofEquity/BookValueofTotalLiabilities = x8 ?
+//x5 = Sales / TotalAssets = x9
+// Z < 1.1 Bancarrota :)
+//afinal vamos usar este tb Z-SCORE = 0.717X1 +  0.847X2 + 3.107X3 + 0.420X4 + 0.998X5
+//para este z > 2.9 safe zone, 1.23 < Z < 2.9 Grey zone, z < 1.23 distress zone
+
+func getZscore(tup[]string) ([]float64, []float64){
+	in := [5]string{tup[2],tup[5],tup[6],tup[7],tup[8]}
+	inValues := make([]float64, 0)
+
+	for _, x := range in {
+		fX, _ := strconv.ParseFloat(x, 64)
+		inValues = append(inValues, fX)
+	}
+	//Z-SCORE = 1.2X1 + 1.4X2 + 3.3X3 + 0.6X4 + 1.0X5
+	//Z-SCORE = 1.2X1 + 1.4X2 + 3.3X3 + 0.6X4 + 1.0X5
+	//Z-SCORE Privado = 0.717X1 +  0.847X2 + 3.107X3 + 0.420X4 + 0.998X5
+	zscore := 1.2 * inValues[0] + 1.4 * inValues[1] + 3.3 * inValues[2] + 0.6 * inValues[3] + 1.0 * inValues[4]
+	//1.1pro normal, 1.23 pro outro
+	outValue := make([]float64, 1)
+	if(zscore < 1.1){
+		outValue[0] = 0
+	}else{
+		outValue[0] = 1
+	}
+	return inValues, outValue
+}
+//nao sabia que chamar a isto
+func getInputAndOutput(tup[]string) (bool, []float64, []float64){
+	in := tup[:len(tup)-1]
+	out := tup[len(tup)-1]
+	inValues := make([]float64, 0)
+	addInput := true
+
+	for _, x := range in {
+		if(x == "?"){
+			addInput = false
+			break
+		}
+		fX, _ := strconv.ParseFloat(x, 64)
+		inValues = append(inValues, fX)
+	}
+
+	outValue := make([]float64, 1)
+	outParse, r := strconv.ParseFloat(out, 64)
+	if r != nil {
+		fmt.Print(r)
+	}
+
+	outValue[0] = outParse
+	return addInput, inValues, outValue
+}
+
+//apeteceu-me
+//tup = remove(tup, 61) // (short-term liabilities *365) / sales
+//tup = remove(tup, 54) // working capital
+//tup = remove(tup, 43) // (receivables * 365) / sales ( X61
+//	tup = remove(tup, 19) //(inventory * 365) / sales (X6
+//	tup = remove(tup, 18)
+//	tup = remove(tup, 17)
+
+//esta funcao ta enorme pessoal
 func importDataSet(filepath string) ([][]float64, [][]float64, [][]float64, [][]float64) {
 	start := time.Now()
 
@@ -24,6 +90,7 @@ func importDataSet(filepath string) ([][]float64, [][]float64, [][]float64, [][]
 
 	inputs := make([][]float64, 0)
 	targets := make([][]float64, 0)
+	isZscore := false //opah por isto dp como variavel xDDDD
 
 	for _, line := range lines {
 
@@ -32,34 +99,20 @@ func importDataSet(filepath string) ([][]float64, [][]float64, [][]float64, [][]
 		if len(line) == 0 {
 			break
 		}
-
 		tup := strings.Split(line, ",")
 
-		//tup = remove(tup, 61) // (short-term liabilities *365) / sales
-		//tup = remove(tup, 54) // working capital
-		//tup = remove(tup, 43) // (receivables * 365) / sales ( X61
-		//	tup = remove(tup, 19) //(inventory * 365) / sales (X6
-		//	tup = remove(tup, 18)
-		//	tup = remove(tup, 17)
-
-		in := tup[:len(tup)-1]
-		out := tup[len(tup)-1]
-		inValues := make([]float64, 0)
-
-		for _, x := range in {
-			fX, _ := strconv.ParseFloat(x, 64)
-			inValues = append(inValues, fX)
+		if(!isZscore){
+			addInput, inValues, outValue := getInputAndOutput(tup)
+			if(addInput){
+				inputs = append(inputs, inValues)
+				targets = append(targets, outValue)
+			}
+		}else{
+			inValues, outValue := getZscore(tup)
+			inputs = append(inputs, inValues)
+			targets = append(targets, outValue)
 		}
 
-		inputs = append(inputs, inValues)
-		outValue := make([]float64, 1)
-		outParse, r := strconv.ParseFloat(out, 64)
-		if r != nil {
-			fmt.Print(r)
-		}
-
-		outValue[0] = outParse
-		targets = append(targets, outValue)
 	}
 
 	trainInputs := make([][]float64, 0)
@@ -129,9 +182,9 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 
 	start := time.Now()
 	fmt.Printf("Size: %d \n", len(trainInput[0]))
-	nn := gonn.NewNetwork(len(trainInput[0]), 500, 1, false, 0.25, 0.1)//TODO ver isto também
+	nn := gonn.NewNetwork(len(trainInput[0]), 200, 1, false, 0.25, 0.1)//TODO ver isto também
 
-	nn.Train(trainInput, trainTargets, 140) //TODO ver isto
+	nn.Train(trainInput, trainTargets, 200) //TODO ver isto
 
 	gonn.DumpNN("1.nn", nn)
 
@@ -186,7 +239,7 @@ const Dir = "dataSet/"
 const FileName = "yearV2.arff"
 
 func main() {
-	for i := 2; i <= 2; i++ {
+	for i := 1; i <= 1; i++ {
 		name := Dir + strconv.Itoa(i) + FileName
 		fmt.Printf("\n" + name + "\n")
 		t, tr, r, rt := importDataSet(name)
