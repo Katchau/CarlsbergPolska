@@ -68,7 +68,7 @@ func getInputAndOutput(tup []string) (bool, []float64, []float64) {
 //	tup = remove(tup, 17)
 
 //esta funcao ta enorme pessoal
-func importDataSet(filepath string) ([][]float64, [][]float64, [][]float64, [][]float64) {
+func importDataSet(filepath string, isZscore bool) ([][]float64, [][]float64, [][]float64, [][]float64) {
 	start := time.Now()
 
 	f, _ := os.Open(filepath)
@@ -80,7 +80,6 @@ func importDataSet(filepath string) ([][]float64, [][]float64, [][]float64, [][]
 
 	inputs := make([][]float64, 0)
 	targets := make([][]float64, 0)
-	isZscore := false //opah por isto dp como variavel xDDDD
 
 	for _, line := range lines {
 
@@ -232,18 +231,18 @@ const Dir = "dataSet/"
 //FileName default structure of Filename
 const FileName = "yearV2.arff"
 
-func trainIndividualYear(year int){
+func trainIndividualYear(year int, zscore bool){
 	name := Dir + strconv.Itoa(year) + FileName
 	fmt.Printf("\n" + name + "\n")
-	t, tr, r, rt := importDataSet(name)
+	t, tr, r, rt := importDataSet(name, zscore)
 	fmt.Printf("\nGenerated %d Training sets and %d test sets \n", len(t), len(r))
 
 	NNBP(t, tr, r, rt)
 }
 
-func trainAllYearsIndividually(){
+func trainAllYearsIndividually(zscore bool){
 	for i := 1; i <= 5; i++ {
-		trainIndividualYear(i)
+		trainIndividualYear(i,zscore)
 	}
 }
 
@@ -257,7 +256,7 @@ func appendArray(input[][][]float64)[][]float64{
 	return i
 }
 
-func trainAllYears(){
+func trainAllYears(zscore bool){
 	input1 := make([][][]float64, 0)
 	input2 := make([][][]float64, 0)
 	input3 := make([][][]float64, 0)
@@ -265,7 +264,7 @@ func trainAllYears(){
 	for i := 1; i <= 5; i++ {
 		name := Dir + strconv.Itoa(i) + FileName
 		fmt.Printf("\n" + name + "\n")
-		t, tr, r, rt := importDataSet(name)
+		t, tr, r, rt := importDataSet(name,zscore)
 		input1 = append(input1, t)
 		input2 = append(input2, tr)
 		input3 = append(input3, r)
@@ -281,7 +280,8 @@ func trainAllYears(){
 }
 
 func main() {
-	//trainAllYears()
-	trainIndividualYear(1)
-	//trainAllYearsIndividually()
+	zscore := false
+	//trainAllYears(zscore)
+	trainIndividualYear(1,zscore)
+	//trainAllYearsIndividually(zscore)
 }
