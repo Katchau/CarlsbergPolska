@@ -232,14 +232,56 @@ const Dir = "dataSet/"
 //FileName default structure of Filename
 const FileName = "yearV2.arff"
 
-func main() {
-	for i := 1; i <= 1; i++ {
+func trainIndividualYear(year int){
+	name := Dir + strconv.Itoa(year) + FileName
+	fmt.Printf("\n" + name + "\n")
+	t, tr, r, rt := importDataSet(name)
+	fmt.Printf("\nGenerated %d Training sets and %d test sets \n", len(t), len(r))
+
+	NNBP(t, tr, r, rt)
+}
+
+func trainAllYearsIndividually(){
+	for i := 1; i <= 5; i++ {
+		trainIndividualYear(i)
+	}
+}
+
+func appendArray(input[][][]float64)[][]float64{
+	i := make([][]float64, 0)
+	for _, y := range input{
+		for _, x := range y{
+				i = append(i, x)
+			}
+	}
+	return i
+}
+
+func trainAllYears(){
+	input1 := make([][][]float64, 0)
+	input2 := make([][][]float64, 0)
+	input3 := make([][][]float64, 0)
+	input4 := make([][][]float64, 0)
+	for i := 1; i <= 5; i++ {
 		name := Dir + strconv.Itoa(i) + FileName
 		fmt.Printf("\n" + name + "\n")
 		t, tr, r, rt := importDataSet(name)
-		fmt.Printf("\nGenerated %d %d Training sets and %d %d test sets \n", len(t), len(tr), len(r), len(rt))
-
-		NNBP(t, tr, r, rt)
+		input1 = append(input1, t)
+		input2 = append(input2, tr)
+		input3 = append(input3, r)
+		input4 = append(input4, rt)
+		fmt.Printf("\nGenerated %d Training sets and %d test sets \n", len(t), len(r))
 	}
+	i1 := appendArray(input1)
+	i2 := appendArray(input2)
+	i3 := appendArray(input3)
+	i4 := appendArray(input4)
 
+	NNBP(i1, i2, i3, i4)
+}
+
+func main() {
+	//trainAllYears()
+	trainIndividualYear(1)
+	//trainAllYearsIndividually()
 }
