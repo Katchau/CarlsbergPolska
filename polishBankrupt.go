@@ -22,36 +22,26 @@ import (
 //afinal vamos usar este tb Z-SCORE = 0.717X1 +  0.847X2 + 3.107X3 + 0.420X4 + 0.998X5
 //para este z > 2.9 safe zone, 1.23 < Z < 2.9 Grey zone, z < 1.23 distress zone
 
-func getZscore(tup[]string) ([]float64, []float64){
-	in := [5]string{tup[2],tup[5],tup[6],tup[7],tup[8]}
+func getZscore(tup []string) []float64 {
+	in := [5]string{tup[2], tup[5], tup[6], tup[7], tup[8]}
 	inValues := make([]float64, 0)
 
 	for _, x := range in {
 		fX, _ := strconv.ParseFloat(x, 64)
 		inValues = append(inValues, fX)
 	}
-	//Z-SCORE = 1.2X1 + 1.4X2 + 3.3X3 + 0.6X4 + 1.0X5
-	//Z-SCORE = 1.2X1 + 1.4X2 + 3.3X3 + 0.6X4 + 1.0X5
-	//Z-SCORE Privado = 0.717X1 +  0.847X2 + 3.107X3 + 0.420X4 + 0.998X5
-	zscore := 1.2 * inValues[0] + 1.4 * inValues[1] + 3.3 * inValues[2] + 0.6 * inValues[3] + 1.0 * inValues[4]
-	//1.1pro normal, 1.23 pro outro
-	outValue := make([]float64, 1)
-	if(zscore < 1.1){
-		outValue[0] = 0
-	}else{
-		outValue[0] = 1
-	}
-	return inValues, outValue
+	return inValues
 }
+
 //nao sabia que chamar a isto
-func getInputAndOutput(tup[]string) (bool, []float64, []float64){
+func getInputAndOutput(tup []string) (bool, []float64, []float64) {
 	in := tup[:len(tup)-1]
 	out := tup[len(tup)-1]
 	inValues := make([]float64, 0)
 	addInput := true
 
 	for _, x := range in {
-		if(x == "?"){
+		if x == "?" {
 			addInput = false
 			break
 		}
@@ -101,14 +91,18 @@ func importDataSet(filepath string) ([][]float64, [][]float64, [][]float64, [][]
 		}
 		tup := strings.Split(line, ",")
 
-		if(!isZscore){
+		if !isZscore {
 			addInput, inValues, outValue := getInputAndOutput(tup)
-			if(addInput){
+			if addInput {
 				inputs = append(inputs, inValues)
 				targets = append(targets, outValue)
 			}
-		}else{
-			inValues, outValue := getZscore(tup)
+		} else {
+			inValues := getZscore(tup)
+			out := tup[len(tup)-1]
+			outValue := make([]float64, 1)
+			outParse, _ := strconv.ParseFloat(out, 64)
+			outValue[0] = outParse
 			inputs = append(inputs, inValues)
 			targets = append(targets, outValue)
 		}
@@ -182,7 +176,7 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 
 	start := time.Now()
 	fmt.Printf("Size: %d \n", len(trainInput[0]))
-	nn := gonn.NewNetwork(len(trainInput[0]), 200, 1, false, 0.25, 0.1)//TODO ver isto também
+	nn := gonn.NewNetwork(len(trainInput[0]), 200, 1, false, 0.25, 0.1) //TODO ver isto também
 
 	nn.Train(trainInput, trainTargets, 200) //TODO ver isto
 
