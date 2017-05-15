@@ -40,13 +40,19 @@ func getInputAndOutput(tup []string) (bool, []float64, []float64) {
 	inValues := make([]float64, 0)
 	addInput := true
 
-	for _, x := range in {
+	for index, x := range in {
 		if x == "?" {
-			addInput = false
-			break
+			if len(averageData) > 2 {
+					inValues = append(inValues, averageData[index])
+					fmt.Printf("\nLolada %.2f", averageData[index])
+			} else {
+				addInput = false
+				break
+			}
+		} else {
+			fX, _ := strconv.ParseFloat(x, 64)
+			inValues = append(inValues, fX)
 		}
-		fX, _ := strconv.ParseFloat(x, 64)
-		inValues = append(inValues, fX)
 	}
 
 	outValue := make([]float64, 1)
@@ -233,24 +239,68 @@ func remove(slice []string, s int) []string {
 	return append(slice[:s], slice[s+1:]...)
 }
 
+func getAverageValues(filepath string) []float64{
+	average := make([]float64, 64)
+	f, _ := os.Open(filepath)
+	defer f.Close()
+	content, _ := ioutil.ReadAll(f)
+	sContent := string(content)
+	lines := strings.Split(sContent, "\n")
+	inputs := make([][]float64, 0)
+
+	for index, line := range lines {
+		if index == 0 {
+			continue
+		}
+		line = strings.TrimRight(line, "\r\n")
+		if len(line) == 0 {
+			break
+		}
+		tup := strings.Split(line, ",")
+
+		addInput, inValues, _ := getInputAndOutput(tup)
+		if addInput {
+			inputs = append(inputs, inValues)
+		}
+	}
+	for i := 0; i < 64; i++{
+		var total float64 = 0.0
+		for _, input := range inputs {
+			total += input[i]
+		}
+		average[i] = total / float64(len(inputs))
+	}
+	fmt.Printf("\nAverage Process complete!\n")
+
+	return average
+
+}
+
 //Dir  location of datasets
 const Dir = "dataSet/"
 
 //FileName default structure of Filename
 const FileName = "yearV2.arff"
+const FileNameAvg = "year.arff"
 
-func trainIndividualYear(year int, zscore bool) {
+var averageData []float64
+
+func trainIndividualYear(year int, zscore bool, ignore bool) {
 	name := Dir + strconv.Itoa(year) + FileName
 	fmt.Printf("\n" + name + "\n")
+	if !ignore {
+		avgName :=  Dir + strconv.Itoa(year) + FileNameAvg
+		averageData = getAverageValues(avgName)
+	}
 	t, tr, r, rt := importDataSet(name, zscore)
 	fmt.Printf("\nGenerated %d Training sets and %d test sets \n", len(t), len(r))
 
 	NNBP(t, tr, r, rt)
 }
 
-func trainAllYearsIndividually(zscore bool) {
+func trainAllYearsIndividually(zscore bool, ignore bool) {
 	for i := 1; i <= 5; i++ {
-		trainIndividualYear(i, zscore)
+		trainIndividualYear(i, zscore, ignore)
 	}
 }
 
@@ -288,8 +338,18 @@ func trainAllYears(zscore bool) {
 }
 
 func main() {
+	args := os.Args[1:]
+	if len(args) > 1{
+		fmt.Printf("Error: Expected One argument (--ignore) or no arguments!")
+	}
+
+	ignore := false
+	if len(args) == 1 && args[0] == "ignore" {
+		ignore = true
+	}
+
 	zscore := false
-	//trainAllYears(zscore)
-	trainIndividualYear(1, zscore)
-	//trainAllYearsIndividually(zscore)
+	//trainAllYears(zscore, ignore)
+	trainIndividualYear(3, zscore, ignore)
+	//trainAllYearsIndividually(zscore, ignore)
 }
