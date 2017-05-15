@@ -81,7 +81,15 @@ func importDataSet(filepath string, isZscore bool) ([][]float64, [][]float64, []
 	inputs := make([][]float64, 0)
 	targets := make([][]float64, 0)
 
-	for _, line := range lines {
+	var train_length int
+
+	for index, line := range lines {
+
+		if index == 0 {
+			fmt.Printf("%s\n", line)
+			train_length, _ = strconv.Atoi(line)
+			continue
+		}
 
 		line = strings.TrimRight(line, "\r\n")
 
@@ -116,14 +124,14 @@ func importDataSet(filepath string, isZscore bool) ([][]float64, [][]float64, []
 	rangeValues := minMax(inputs)
 
 	for i, x := range inputs {
-
 		x = normalize(x, rangeValues)
-		if i%3 == 0 {
-			testTargets = append(testTargets, x)
-			resultTargets = append(resultTargets, targets[i])
-		} else {
+
+		if i < train_length {
 			trainInputs = append(trainInputs, x)
 			resultInputs = append(resultInputs, targets[i])
+		} else {
+			testTargets = append(testTargets, x)
+			resultTargets = append(resultTargets, targets[i])
 		}
 	}
 
@@ -231,7 +239,7 @@ const Dir = "dataSet/"
 //FileName default structure of Filename
 const FileName = "yearV2.arff"
 
-func trainIndividualYear(year int, zscore bool){
+func trainIndividualYear(year int, zscore bool) {
 	name := Dir + strconv.Itoa(year) + FileName
 	fmt.Printf("\n" + name + "\n")
 	t, tr, r, rt := importDataSet(name, zscore)
@@ -240,23 +248,23 @@ func trainIndividualYear(year int, zscore bool){
 	NNBP(t, tr, r, rt)
 }
 
-func trainAllYearsIndividually(zscore bool){
+func trainAllYearsIndividually(zscore bool) {
 	for i := 1; i <= 5; i++ {
-		trainIndividualYear(i,zscore)
+		trainIndividualYear(i, zscore)
 	}
 }
 
-func appendArray(input[][][]float64)[][]float64{
+func appendArray(input [][][]float64) [][]float64 {
 	i := make([][]float64, 0)
-	for _, y := range input{
-		for _, x := range y{
-				i = append(i, x)
-			}
+	for _, y := range input {
+		for _, x := range y {
+			i = append(i, x)
+		}
 	}
 	return i
 }
 
-func trainAllYears(zscore bool){
+func trainAllYears(zscore bool) {
 	input1 := make([][][]float64, 0)
 	input2 := make([][][]float64, 0)
 	input3 := make([][][]float64, 0)
@@ -264,7 +272,7 @@ func trainAllYears(zscore bool){
 	for i := 1; i <= 5; i++ {
 		name := Dir + strconv.Itoa(i) + FileName
 		fmt.Printf("\n" + name + "\n")
-		t, tr, r, rt := importDataSet(name,zscore)
+		t, tr, r, rt := importDataSet(name, zscore)
 		input1 = append(input1, t)
 		input2 = append(input2, tr)
 		input3 = append(input3, r)
@@ -282,6 +290,6 @@ func trainAllYears(zscore bool){
 func main() {
 	zscore := false
 	//trainAllYears(zscore)
-	trainIndividualYear(1,zscore)
+	trainIndividualYear(1, zscore)
 	//trainAllYearsIndividually(zscore)
 }
