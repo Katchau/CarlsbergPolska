@@ -212,9 +212,9 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 
 		fmt.Println(output[0], expect)
 
-		if output[0] < 0.1 && expect == 0 {
+		if output[0] < 0.5 && expect == 0 {
 			good++
-		} else if output[0] > 0.8 && expect == 1 {
+		} else if output[0] > 0.5 && expect == 1 {
 			good++
 		} else if output[0] != expect {
 			errCount++
