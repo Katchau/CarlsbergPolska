@@ -43,8 +43,8 @@ func getInputAndOutput(tup []string) (bool, []float64, []float64) {
 	for index, x := range in {
 		if x == "?" {
 			if len(averageData) > 2 {
-					inValues = append(inValues, averageData[index])
-					fmt.Printf("\nLolada %.2f", averageData[index])
+				inValues = append(inValues, averageData[index])
+				fmt.Printf("\nLolada %.2f", averageData[index])
 			} else {
 				addInput = false
 				break
@@ -87,13 +87,13 @@ func importDataSet(filepath string, isZscore bool) ([][]float64, [][]float64, []
 	inputs := make([][]float64, 0)
 	targets := make([][]float64, 0)
 
-	var train_length int
+	var trainLength int
 
 	for index, line := range lines {
 
 		if index == 0 {
-			fmt.Printf("%s\n", line)
-			train_length, _ = strconv.Atoi(line)
+			//fmt.Printf("%s\n", line)
+			trainLength, _ = strconv.Atoi(line)
 			continue
 		}
 
@@ -128,18 +128,23 @@ func importDataSet(filepath string, isZscore bool) ([][]float64, [][]float64, []
 	resultTargets := make([][]float64, 0)
 
 	rangeValues := minMax(inputs)
-
+	falencias := 0
 	for i, x := range inputs {
 		x = normalize(x, rangeValues)
 
-		if i < train_length {
+		if i < trainLength {
 			trainInputs = append(trainInputs, x)
 			resultInputs = append(resultInputs, targets[i])
+			if targets[i][0] == 1 {
+				falencias++
+			}
 		} else {
 			testTargets = append(testTargets, x)
 			resultTargets = append(resultTargets, targets[i])
 		}
 	}
+
+	fmt.Printf("falencias 1 %d \n", falencias)
 
 	elapsed := time.Since(start)
 	fmt.Printf("Load DataSet took %s \n", elapsed)
@@ -184,14 +189,34 @@ func minMax(input [][]float64) [][]float64 {
 	return minMax
 }
 
+func getBatch(trainInput [][]float64, start int, end int) [][]float64 {
+	size := end - start
+	b := make([][]float64, 0)
+	for i := 0; i < size; i++ {
+		b = append(b, trainInput[start+i])
+	}
+	return b
+}
+
 //NNBP create,train,test
 func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float64, testTargets [][]float64) {
 
 	start := time.Now()
-	fmt.Printf("Size: %d \n", len(trainInput[0]))
-	nn := gonn.NewNetwork(len(trainInput[0]), 200, 1, false, 0.25, 0.1) //TODO ver isto também
+	//fmt.Printf("Size: %d \n", len(trainInput[0]))2
+	nn := gonn.NewNetwork(len(trainInput[0]), 200, 1, false, 0.25, 0.14) //TODO ver isto também
 
-	nn.Train(trainInput, trainTargets, 200) //TODO ver isto
+	nBachs := 2
+	bachSize := len(trainInput) / nBachs
+
+	for i := 0; i < nBachs; i++ {
+		batch := getBatch(trainInput, bachSize*i, bachSize*(i+1))
+
+		batchResults := getBatch(trainTargets, bachSize*i, bachSize*(i+1))
+
+		fmt.Println(len(batch))
+		fmt.Println(len(batchResults))
+		nn.Train(batch, batchResults, 1500) //TODO ver isto
+	}
 
 	gonn.DumpNN("1.nn", nn)
 
@@ -205,12 +230,16 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 	minError := 1.0
 
 	good := 0.0
+
+	falencias := 0
 	for i := 0; i < len(testInputs); i++ {
 		output := nn.Forward(testInputs[i])
 		expect := testTargets[i][0]
 		error := math.Abs(expect - output[0])
 
-		fmt.Println(output[0], expect)
+		if expect == 1 {
+			falencias++
+		}
 
 		if output[0] < 0.5 && expect == 0 {
 			good++
@@ -227,6 +256,8 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 		}
 
 	}
+
+	fmt.Printf("falencias 2 %d \n", falencias)
 	fmt.Printf("success rate: %.2f %% \n", (good / float64(len(testInputs)) * 100))
 	fmt.Printf("error rate: %.2f %% \n", (errCount / float64(len(testInputs)) * 100))
 	fmt.Printf("error range [%.4f , %.4f]\n", minError, maxError)
@@ -239,7 +270,7 @@ func remove(slice []string, s int) []string {
 	return append(slice[:s], slice[s+1:]...)
 }
 
-func getAverageValues(filepath string) []float64{
+func getAverageValues(filepath string) []float64 {
 	average := make([]float64, 64)
 	f, _ := os.Open(filepath)
 	defer f.Close()
@@ -263,8 +294,8 @@ func getAverageValues(filepath string) []float64{
 			inputs = append(inputs, inValues)
 		}
 	}
-	for i := 0; i < 64; i++{
-		var total float64 = 0.0
+	for i := 0; i < 64; i++ {
+		var total = 0.0
 		for _, input := range inputs {
 			total += input[i]
 		}
@@ -279,8 +310,10 @@ func getAverageValues(filepath string) []float64{
 //Dir  location of datasets
 const Dir = "dataSet/"
 
-//FileName default structure of Filename
+//FileName with edited head structure of Filename
 const FileName = "yearV2.arff"
+
+//FileName default structure of Filename
 const FileNameAvg = "year.arff"
 
 var averageData []float64
@@ -289,7 +322,7 @@ func trainIndividualYear(year int, zscore bool, ignore bool) {
 	name := Dir + strconv.Itoa(year) + FileName
 	fmt.Printf("\n" + name + "\n")
 	if !ignore {
-		avgName :=  Dir + strconv.Itoa(year) + FileNameAvg
+		avgName := Dir + strconv.Itoa(year) + FileNameAvg
 		averageData = getAverageValues(avgName)
 	}
 	t, tr, r, rt := importDataSet(name, zscore)
@@ -339,7 +372,7 @@ func trainAllYears(zscore bool) {
 
 func main() {
 	args := os.Args[1:]
-	if len(args) > 1{
+	if len(args) > 1 {
 		fmt.Printf("Error: Expected One argument (--ignore) or no arguments!")
 	}
 
@@ -350,6 +383,6 @@ func main() {
 
 	zscore := false
 	//trainAllYears(zscore, ignore)
-	trainIndividualYear(3, zscore, ignore)
-	//trainAllYearsIndividually(zscore, ignore)
+	//trainIndividualYear(3, zscore, ignore)
+	trainAllYearsIndividually(zscore, ignore)
 }
