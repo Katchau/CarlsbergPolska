@@ -6,7 +6,10 @@ def shuffle(year, ignore_null):
         non_bankrupt = []
 
         for line in source:
-            if not (ignore_null  and line.find('?') != -1):
+            if not line.strip():
+                continue
+
+            if not (ignore_null and line.find('?') != -1):
                 bankrupt.append(line) if line[-2:-1] == '1' else non_bankrupt.append(line)
 
         random.shuffle(bankrupt)
