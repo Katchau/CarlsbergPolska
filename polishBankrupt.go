@@ -44,7 +44,7 @@ func getInputAndOutput(tup []string) (bool, []float64, []float64) {
 		if x == "?" {
 			if len(averageData) > 2 {
 				inValues = append(inValues, averageData[index])
-				fmt.Printf("\nLolada %.2f", averageData[index])
+				//fmt.Printf("\nLolada %.2f", averageData[index])
 			} else {
 				addInput = false
 				break
@@ -203,8 +203,8 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 
 	start := time.Now()
 	//fmt.Printf("Size: %d \n", len(trainInput[0]))2
-	nn := gonn.NewNetwork(len(trainInput[0]), 200, 1, false, 0.25, 0.14) //TODO ver isto também
-
+	nn := gonn.NewNetwork(len(trainInput[0]), 300, 1, false, 0.2, 0.2) //TODO ver isto também
+	//0.35 0.16
 	nBachs := 2
 	bachSize := len(trainInput) / nBachs
 
@@ -215,7 +215,7 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 
 		fmt.Println(len(batch))
 		fmt.Println(len(batchResults))
-		nn.Train(batch, batchResults, 1500) //TODO ver isto
+		nn.Train(batch, batchResults, 3000) //TODO ver isto
 	}
 
 	gonn.DumpNN("1.nn", nn)
@@ -383,6 +383,6 @@ func main() {
 
 	zscore := false
 	//trainAllYears(zscore, ignore)
-	//trainIndividualYear(3, zscore, ignore)
-	trainAllYearsIndividually(zscore, ignore)
+	trainIndividualYear(3, zscore, ignore)
+	//trainAllYearsIndividually(zscore, ignore)
 }
