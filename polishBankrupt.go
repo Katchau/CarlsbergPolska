@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"bufio"
 	"strconv"
 	"strings"
 	"time"
@@ -347,14 +348,19 @@ func appendArray(input [][][]float64) [][]float64 {
 	return i
 }
 
-func trainAllYears(zscore bool) {
+func trainAllYears(zscore bool, ignore bool) {
 	input1 := make([][][]float64, 0)
 	input2 := make([][][]float64, 0)
 	input3 := make([][][]float64, 0)
 	input4 := make([][][]float64, 0)
 	for i := 1; i <= 5; i++ {
+
 		name := Dir + strconv.Itoa(i) + FileName
 		fmt.Printf("\n" + name + "\n")
+		if !ignore {
+			avgName := Dir + strconv.Itoa(i) + FileNameAvg
+			averageData = getAverageValues(avgName)
+		}
 		t, tr, r, rt := importDataSet(name, zscore)
 		input1 = append(input1, t)
 		input2 = append(input2, tr)
@@ -370,19 +376,85 @@ func trainAllYears(zscore bool) {
 	NNBP(i1, i2, i3, i4)
 }
 
+func methodMenu() bool{
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Welcome to Polish Bakrupty Neuronal Network!")
+	var zscore bool
+	for{
+		fmt.Println("Would you wish to use normal method or Z-score?")
+		fmt.Println("Type normal or zscore as an answer")
+		text, _ := reader.ReadString('\n')
+		if text == "normal\n"{
+			zscore = false
+			break
+		}
+		if text == "zscore\n"{
+			zscore = true
+			break
+		}else{
+			fmt.Println("Please introduce a valid method!")
+		}
+	}
+	return zscore
+}
+
+func ignoreMenu() bool{
+	reader := bufio.NewReader(os.Stdin)
+	var ignore bool
+	for{
+		fmt.Println("Would you wish to ignore incomplete data or use the average?")
+		fmt.Println("Type ignore or average as an answer")
+		text, _ := reader.ReadString('\n')
+		if text == "ignore\n"{
+			ignore = true
+			break
+		}
+		if text == "average\n"{
+			ignore = false
+			break
+		}else{
+			fmt.Println("Please introduce a valid value!")
+		}
+	}
+	return ignore
+}
+
+func dataSet(zscore bool, ignore bool){
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Choose one of the 3 options")
+	for{
+		fmt.Println("Would you wish to:")
+		fmt.Println("Train one year at your choice(y/n)")
+		text, _ := reader.ReadString('\n')
+		if text == "y\n"{
+			fmt.Println("Which year? (1-5)")
+			text, _ := reader.ReadString('\n')
+			value := strings.TrimRight(text, "\n")
+			choice, _ := strconv.Atoi(value)
+			if(choice > 0 && choice < 6){
+				trainIndividualYear(choice,zscore,ignore)
+				break
+			}else{
+				fmt.Println("Please introduce a valid year")
+				fmt.Printf("\nIntroduced %d\n", choice)
+				continue
+			}
+		}
+		fmt.Println("Train all years individually? (y/n)")
+		text, _ = reader.ReadString('\n')
+		if text == "y\n"{
+			trainAllYearsIndividually(zscore, ignore)
+		}
+		fmt.Println("Train all years as a set? (y/n)")
+		text, _ = reader.ReadString('\n')
+		if text == "y\n"{
+			trainAllYears(zscore, ignore)
+		}
+	}
+}
+
 func main() {
-	args := os.Args[1:]
-	if len(args) > 1 {
-		fmt.Printf("Error: Expected One argument (--ignore) or no arguments!")
-	}
-
-	ignore := false
-	if len(args) == 1 && args[0] == "ignore" {
-		ignore = true
-	}
-
-	zscore := false
-	//trainAllYears(zscore, ignore)
-	trainIndividualYear(3, zscore, ignore)
-	//trainAllYearsIndividually(zscore, ignore)
+	zscore := methodMenu()
+	ignore := ignoreMenu()
+	dataSet(zscore, ignore)
 }
