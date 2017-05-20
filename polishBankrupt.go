@@ -444,11 +444,13 @@ func dataSet(zscore bool, ignore bool){
 		text, _ = reader.ReadString('\n')
 		if text == "y\n"{
 			trainAllYearsIndividually(zscore, ignore)
+			break
 		}
 		fmt.Println("Train all years as a set? (y/n)")
 		text, _ = reader.ReadString('\n')
 		if text == "y\n"{
 			trainAllYears(zscore, ignore)
+			break
 		}
 	}
 }
