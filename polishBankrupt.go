@@ -19,10 +19,6 @@ import (
 //X3 = EBIT/TotalAssets = X7
 //X4 = MarketValuesofEquity/BookValueofTotalLiabilities = x8 ?
 //x5 = Sales / TotalAssets = x9
-// Z < 1.1 Bancarrota :)
-//afinal vamos usar este tb Z-SCORE = 0.717X1 +  0.847X2 + 3.107X3 + 0.420X4 + 0.998X5
-//para este z > 2.9 safe zone, 1.23 < Z < 2.9 Grey zone, z < 1.23 distress zone
-
 func getZscore(tup []string) []float64 {
 	in := [5]string{tup[2], tup[5], tup[6], tup[7], tup[8]}
 	inValues := make([]float64, 0)
@@ -45,7 +41,6 @@ func getInputAndOutput(tup []string) (bool, []float64, []float64) {
 		if x == "?" {
 			if len(averageData) > 2 {
 				inValues = append(inValues, averageData[index])
-				//fmt.Printf("\nLolada %.2f", averageData[index])
 			} else {
 				addInput = false
 				break
@@ -57,10 +52,7 @@ func getInputAndOutput(tup []string) (bool, []float64, []float64) {
 	}
 
 	outValue := make([]float64, 1)
-	outParse, r := strconv.ParseFloat(out, 64)
-	if r != nil {
-		fmt.Print(r)
-	}
+	outParse, _ := strconv.ParseFloat(out, 64)
 
 	outValue[0] = outParse
 	return addInput, inValues, outValue
@@ -93,7 +85,6 @@ func importDataSet(filepath string, isZscore bool) ([][]float64, [][]float64, []
 	for index, line := range lines {
 
 		if index == 0 {
-			//fmt.Printf("%s\n", line)
 			trainLength, _ = strconv.Atoi(line)
 			continue
 		}
@@ -162,7 +153,6 @@ func normalize(in []float64, minMax [][]float64) []float64 {
 		value := in[i]
 
 		out[i] = (value - valueRange[0]) / (valueRange[1] - valueRange[0])
-		//	fmt.Printf("%.3f \n", out[i])
 	}
 
 	return out
@@ -203,9 +193,7 @@ func getBatch(trainInput [][]float64, start int, end int) [][]float64 {
 func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float64, testTargets [][]float64) {
 
 	start := time.Now()
-	//fmt.Printf("Size: %d \n", len(trainInput[0]))2
 	nn := gonn.NewNetwork(len(trainInput[0]), 300, 1, false, 0.2, 0.2) //TODO ver isto também
-	//0.35 0.16
 	nBachs := 2
 	bachSize := len(trainInput) / nBachs
 
@@ -213,9 +201,6 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 		batch := getBatch(trainInput, bachSize*i, bachSize*(i+1))
 
 		batchResults := getBatch(trainTargets, bachSize*i, bachSize*(i+1))
-
-		fmt.Println(len(batch))
-		fmt.Println(len(batchResults))
 		nn.Train(batch, batchResults, 3000) //TODO ver isto
 	}
 
@@ -258,7 +243,6 @@ func NNBP(trainInput [][]float64, trainTargets [][]float64, testInputs [][]float
 
 	}
 
-	fmt.Printf("falencias 2 %d \n", falencias)
 	fmt.Printf("success rate: %.2f %% \n", (good / float64(len(testInputs)) * 100))
 	fmt.Printf("error rate: %.2f %% \n", (errCount / float64(len(testInputs)) * 100))
 	fmt.Printf("error range [%.4f , %.4f]\n", minError, maxError)
@@ -381,7 +365,7 @@ func methodMenu() bool{
 	fmt.Println("Welcome to Polish Bakrupty Neuronal Network!")
 	var zscore bool
 	for{
-		fmt.Println("Would you wish to use normal method or Z-score?")
+		fmt.Println("Would you wish to use normal method(64 attributes) or Z-score?(5 attributes)")
 		fmt.Println("Type normal or zscore as an answer")
 		text, _ := reader.ReadString('\n')
 		if text == "normal\n"{
